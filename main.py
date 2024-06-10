@@ -1,16 +1,27 @@
-# This is a sample Python script.
+import cv2
+import matplotlib.pyplot as plt
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# %matplotlib inline
 
+i1 = cv2.imread("lay.jpg")
+i2 = cv2.imread("temp1.jpg")
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+img1 = cv2.cvtColor(i1, cv2.COLOR_BGR2GRAY)
+img2 = cv2.cvtColor(i2, cv2.COLOR_BGR2GRAY)
 
+sift = cv2.SIFT_create()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-h=0
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+k_1, des_1 = sift.detectAndCompute(img1, None)
+k_2, des_2 = sift.detectAndCompute(img2, None)
+
+bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
+
+matches = bf.match(des_1, des_2)
+matches = sorted(matches, key=lambda x: x.distance)
+
+img3 = cv2.drawMatches(img1, k_1, img2, k_2, matches[:50], img2, flags=2)
+img3 = cv2.resize(img3, (1000, 1000))
+cv2.imshow("Output", img3)
+#cv2.resizeWindow('Output', 1000, 1000)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
