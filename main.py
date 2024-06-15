@@ -44,17 +44,12 @@ list_kp2 = list()
 
 for mat in matches:
 
-    # Get the matching keypoints for each of the images
     img1_idx = mat.queryIdx
     img2_idx = mat.trainIdx
 
-    # x - columns
-    # y - rows
-    # Get the coordinates
+
     (x1, y1) = k_1[img1_idx].pt
     (x2, y2) = k_2[img2_idx].pt
-
-    # Append to each list
     list_kp1.append((x1, y1))
     list_kp2.append((x2, y2))
 
@@ -72,12 +67,11 @@ print(x, y)
 
 xoffset, px_w, rot1, yoffset, px_h, rot2 = dataset.GetGeoTransform()
 
-# supposing x and y are your pixel coordinate this
-# is how to get the coordinate in space.
+
 posX = px_w * x + rot1 * y + xoffset
 posY = rot2 * x + px_h * y + yoffset
 
-# shift to the center of the pixel
+
 posX += px_w / 2.0
 posY += px_h / 2.0
 
