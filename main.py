@@ -7,27 +7,29 @@ import argparse
 import os
 from multiprocessing import Pool
 import numpy as np
-from skimage import io, restoration, exposure, filters
-from skimage.transform import resize
+from PIL import Image, ImageEnhance, ImageOps
+import imagecodecs
 
-def process_image(file_name):
-    input_folder = '/Users/ivanyudin/Downloads/IT проекты/pythonProject/data/full_crop'
-    output_folder = '/Users/ivanyudin/Downloads/IT проекты/pythonProject/data/tif_new_full_crop'
-    image_path = file_name
-    image = io.imread(image_path)
-    image_restored = resize(image, output_shape=image.shape, order=3)  # order=3 для бикубической интерполяции
-    image_sharpened = filters.unsharp_mask(image_restored)
-    if image_sharpened.ndim == 3 and image_sharpened.shape[-1] == 4:
-        image_denoised = restoration.denoise_bilateral(image_sharpened[..., :3], sigma_color=0.05, sigma_spatial=15,
-                                                       channel_axis=-1)
-        image_denoised = np.dstack((image_denoised, image_sharpened[..., 3]))
-    else:
-        image_denoised = restoration.denoise_bilateral(image_sharpened, sigma_color=0.05, sigma_spatial=15,
-                                                       channel_axis=-1)
-    image_eq = exposure.equalize_hist(image_denoised)
-    image_retinex = exposure.adjust_log(image_eq)
-    output_path = 'tif_new_crop.tif'
-    io.imsave(output_path, image_retinex)
+def restore_broken_pixels(image):
+    interpolated_image = image.resize(image.size, Image.BICUBIC)
+    return interpolated_image
+
+def enhance_image(image):
+    enhancer = ImageEnhance.Sharpness(image)
+    sharp_image = enhancer.enhance(2.0)
+    noisy_image = np.array(sharp_image)
+    noisy_image = cv2.cvtColor(noisy_image, cv2.COLOR_RGB2BGR)
+    denoised_image = bilateral_filter(noisy_image, 3, 75, 75)  # Параметры можно изменять
+    denoised_image = cv2.cvtColor(denoised_image, cv2.COLOR_BGR2RGB)
+    enhanced_image = Image.fromarray(denoised_image)
+    enhanced_image = ImageOps.equalize(enhanced_image)
+    return enhanced_image
+
+
+def bilateral_filter(image, diameter, sigma_color, sigma_space):
+    # Применение билатерального фильтра из OpenCV
+    bilateral_filtered_image = cv2.bilateralFilter(image, diameter, sigma_color, sigma_space)
+    return bilateral_filtered_image
 
 parser = argparse.ArgumentParser(description="Parser of inputStr")
 parser.add_argument("--crop_name", help="Введите название файла", type=str)
@@ -114,7 +116,13 @@ posX += px_w / 2.0
 posY += px_h / 2.0
 
 print(posX, posY)
-process_image(crop_filepath)
+tif_filepath = args.crop_name
+tif_image = imagecodecs.imread(tif_filepath)
+tif_image_pil = Image.fromarray(np.uint8(tif_image))
+restored_image = restore_broken_pixels(tif_image_pil)
+enhanced_image = enhance_image(restored_image)
+output_filename = "tif_new_crop.tif"
+enhanced_image.save(output_filename)
 
 img3 = cv2.drawMatches(data, k_1, crop_data, k_2, matches[:50], crop_data, flags=2)
 img3 = cv2.resize(img3, (1000, 900))
