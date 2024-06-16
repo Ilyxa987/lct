@@ -3,12 +3,26 @@ import matplotlib.pyplot as plt
 from osgeo import gdal
 import numpy as np
 import math
+import argparse
+
+parser = argparse.ArgumentParser(description="Parser of inputStr")
+parser.add_argument("--crop_name", help="Введите название файла", type=str)
+parser.add_argument("--layout_name", help="Введите название файла", type=str)
+
+args = parser.parse_args()
 
 # %matplotlib inline
 
 # Путь к файлу .tif
-tiflayout_filepath = "18. Sitronics\\18. Sitronics\\layouts\\layout_2021-08-16.tif"
-crop_filepath = "18. Sitronics\\18. Sitronics\\1_20\\crop_1_0_0000.tif"
+if args.crop_name is not None:
+    crop_filepath = args.crop_name
+    if args.layout_name is not None:
+        tiflayout_filepath = args.layout_name
+    else:
+        print("Нет файлов")
+else:
+    print("Нет файлов")
+
 
 # Открытие файла в режиме чтения
 dataset = gdal.Open(tiflayout_filepath, gdal.GA_ReadOnly)
@@ -63,7 +77,7 @@ for i in range(len(list_kp1)):
 x = sx / len(list_kp1)
 y = sy / len(list_kp1)
 
-print(x, y)
+#print(x, y)
 
 xoffset, px_w, rot1, yoffset, px_h, rot2 = dataset.GetGeoTransform()
 
