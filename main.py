@@ -4,6 +4,30 @@ from osgeo import gdal
 import numpy as np
 import math
 import argparse
+import os
+from multiprocessing import Pool
+import numpy as np
+from skimage import io, restoration, exposure, filters
+from skimage.transform import resize
+
+def process_image(file_name):
+    input_folder = '/Users/ivanyudin/Downloads/IT проекты/pythonProject/data/full_crop'
+    output_folder = '/Users/ivanyudin/Downloads/IT проекты/pythonProject/data/tif_new_full_crop'
+    image_path = file_name
+    image = io.imread(image_path)
+    image_restored = resize(image, output_shape=image.shape, order=3)  # order=3 для бикубической интерполяции
+    image_sharpened = filters.unsharp_mask(image_restored)
+    if image_sharpened.ndim == 3 and image_sharpened.shape[-1] == 4:
+        image_denoised = restoration.denoise_bilateral(image_sharpened[..., :3], sigma_color=0.05, sigma_spatial=15,
+                                                       channel_axis=-1)
+        image_denoised = np.dstack((image_denoised, image_sharpened[..., 3]))
+    else:
+        image_denoised = restoration.denoise_bilateral(image_sharpened, sigma_color=0.05, sigma_spatial=15,
+                                                       channel_axis=-1)
+    image_eq = exposure.equalize_hist(image_denoised)
+    image_retinex = exposure.adjust_log(image_eq)
+    output_path = 'tif_new_crop.tif'
+    io.imsave(output_path, image_retinex)
 
 parser = argparse.ArgumentParser(description="Parser of inputStr")
 parser.add_argument("--crop_name", help="Введите название файла", type=str)
@@ -90,6 +114,7 @@ posX += px_w / 2.0
 posY += px_h / 2.0
 
 print(posX, posY)
+process_image(crop_filepath)
 
 img3 = cv2.drawMatches(data, k_1, crop_data, k_2, matches[:50], crop_data, flags=2)
 img3 = cv2.resize(img3, (1000, 900))
